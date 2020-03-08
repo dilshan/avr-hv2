@@ -1,5 +1,7 @@
 AVR High Voltage Programmer 2
-=============================
+==========================
+
+![AVR-HV2 Prototype with Arduino MEGA board](https://raw.githubusercontent.com/dilshan/avr-hv2/master/resources/hv2-prog-finished-mid.png)
 
 *AVR-HV2* is *Arduino* based high voltage parallel programmer for *[AVR](https://www.microchip.com/design-centers/8-bit/avr-mcus)* microcontrollers. This programmer can read, write, and erase both flash memory and EEPROM. Also, this can use to set fuse bits of *AVR* MCUs. 
 
@@ -12,3 +14,4 @@ The current firmware and control software of this programmer supports most of th
 The PCB board used in this project is sponsored by the *[PCBWay](https://www.pcbway.com/)*. PCB of this project can directly order from *PCBWay* through this link.
 
 This is an open-source hardware project. All the design files, firmware, and control software source codes are available at this repository.
+

@@ -601,7 +601,7 @@ unsigned char setFuseExtended(unsigned char fuseVal)
 
   resetProgramMode();
 
-  // Set BS1 to 0.
+  // Set BS2 to 0.
   digitalWrite(PIN_BS2, LOW);
   return (fuseSetTimeout == 0) ? 0x30 : 0x31; 
 }

@@ -41,7 +41,8 @@ type
 
   TDevCommand = (CMDNone, CMDHandshake, CMDVersion, CMDSignature, CMDGetFuse,
   CMDGetCalibrate, CMDFlashRead, CMDEnd, CMDErase, CMDFlashWrite,
-  CMDFlashPageWrite, CMDEEPROMRead, CMDEEPROMWrite, CMDEEPROMPageWrite);
+  CMDFlashPageWrite, CMDEEPROMRead, CMDEEPROMWrite, CMDEEPROMPageWrite,
+  CMDSetFuse);
 
   TMemConfig = record
     CurrentAddr: Word;
@@ -57,6 +58,7 @@ type
     btnConnect: TButton;
     btnEEPROMLoad: TButton;
     btnCancel: TButton;
+    btnSetFuseConfig: TButton;
     btnLoadBrowse: TButton;
     btnLoadEEPROMBrowse: TButton;
     btnProfileLoad: TButton;
@@ -78,6 +80,10 @@ type
     btnSignature: TButton;
     btnVersion: TButton;
     btnWriteFlash: TButton;
+    chkLow: TCheckBox;
+    chkHigh: TCheckBox;
+    chkExt: TCheckBox;
+    chkLock: TCheckBox;
     cmbChipProfile: TComboBox;
     grpEEPROM: TGroupBox;
     grpFlash: TGroupBox;
@@ -161,6 +167,7 @@ type
     procedure btnSaveBrowseClick(Sender: TObject);
     procedure btnSaveEEPROMBrowseClick(Sender: TObject);
     procedure btnSaveEEPROMClick(Sender: TObject);
+    procedure btnSetFuseConfigClick(Sender: TObject);
     procedure btnSignatureClick(Sender: TObject);
     procedure btnVerifyEEPROMClick(Sender: TObject);
     procedure btnVerifyFlashClick(Sender: TObject);
@@ -177,6 +184,7 @@ type
   private
     responseStr: string;
     responseLen: byte;
+    responseLenReq: byte;
     appState: TAppState;
     devCommand: TDevCommand;
     handshakeCount: Byte;
@@ -187,6 +195,8 @@ type
     verifyMem: TMemoryStream;
     isSessionActive: boolean;
     isCancelOp: boolean;
+    fuseIndex: Byte;
+    fuseBitValue: array [0..4] of byte;
 
     function GetChipNameFromSignature(Signature: string): string;
     function BuildCommand(Cmd: Char; Len: Int8): string;
@@ -197,7 +207,7 @@ type
     function LoadDialog() : boolean;
     function SaveEEPROMDialog() : boolean;
     function LoadEEPROMDialog() : boolean;
-    function readWord(stream: TMemoryStream) : Word;
+    function ReadWord(stream: TMemoryStream) : Word;
 
     procedure ReadFlashAddress(addr: Word);
     procedure WriteFlashMemory(addr: byte; data: Word);
@@ -226,6 +236,8 @@ type
     procedure GetFuseConfiguration();
     procedure GetCalibrationData();
     procedure EraseChip();
+    procedure UpdateFuseByte();
+    procedure MoveToNextFuseByte();
 
     procedure OnHandshakeCompleted(IsAvailable: Boolean);
     procedure OnVersionReceived(IsSuccess: boolean; versionInfo: string);
@@ -239,6 +251,7 @@ type
     procedure OnReadEEPROMData(IsSuccess: boolean; dataByte: string);
     procedure OnEEPROMWriteCompleted(IsSuccess: boolean);
     procedure OnEEPROMPageWriteCompleted(IsSuccess: boolean);
+    procedure OnFuseConfigurationUpdated(IsSuccess: boolean);
   end;
 
 var
@@ -262,6 +275,10 @@ const
   CMD_ID_READ_EEPROM = 'T';
   CMD_ID_WRITE_EEPROM = 'J';
   CMD_ID_WRITE_PAGE_EEPROM = 'X';
+  CMD_ID_SET_LOW_FUSE = 'B';
+  CMD_ID_SET_HIGH_FUSE = 'I';
+  CMD_ID_SET_EXT_FUSE = 'K';
+  CMD_ID_SET_LOCK_FUSE = 'O';
 
   // Response string headers.
   HANDSHAKE_RESPONSE = '@' + CMD_ID_HANDSHAKE + '00';
@@ -277,6 +294,10 @@ const
   EEPROM_READ_RESPONSE = '@' + CMD_ID_READ_EEPROM + '0';
   EEPROM_WRITE_RESPONSE = '@' + CMD_ID_WRITE_EEPROM + '00';
   EEPROM_PAGE_WRITE_RESPONSE = '@' + CMD_ID_WRITE_PAGE_EEPROM + '0';
+  SET_FUSE_LOW_RESPONSE = '@' + CMD_ID_SET_LOW_FUSE + '0';
+  SET_FUSE_HIGH_RESPONSE = '@' + CMD_ID_SET_HIGH_FUSE + '0';
+  SET_FUSE_EXT_RESPONSE = '@' + CMD_ID_SET_EXT_FUSE + '0';
+  SET_FUSE_LOCK_RESPONSE =  '@' + CMD_ID_SET_LOCK_FUSE + '0';
 
 resourcestring
   STR_DEV_PATH_ERROR = 'Device path is not specified';
@@ -337,6 +358,14 @@ resourcestring
   STR_VERIFY_FAIL = 'Verification failed';
   STR_START_EEPROM_VERIFY = 'Start verfying EEPROM...';
   STR_CANCEL = 'User terminated the current action!';
+  STR_SET_FUSE_LOW = 'Programming the fuse low bits...';
+  STR_SET_FUSE_HIGH = 'Programming the fuse high bits...';
+  STR_SET_FUSE_EXT = 'Programming the extended fuse bits...';
+  STR_SET_FUSE_LOCK = 'Programming the lock fuse bits...';
+  STR_FUSE_UPDATE_FINISH = 'Selected fuse bits are programmed successfully';
+  STR_FUSE_UPDATE_FAIL = 'Fuse bits update fail';
+  STR_FUSE_VALUE_NOT_FOUND = 'Fuse bit values are not specified';
+  STR_FUSE_INVALID_VALUE = 'Specified fuse bit value(s) are invalid';
 
 implementation
 
@@ -646,6 +675,20 @@ begin
           end;
         end;
       end;
+    CMDSetFuse:
+      begin
+        // Process fuse configuration related serial data streams.
+        if Length(Trim(responseStr)) >= (responseLenReq + 1) then
+        begin
+          responseLen := StrToIntDef(responseStr[4], 0);
+          // Verify update status byte is received from the programmer.
+          if Length(Trim(responseStr)) = (responseLenReq + 1 + responseLen) then
+          begin
+            ResetCurrentCommand();
+            OnFuseConfigurationUpdated((responseStr[5] = '0'));
+          end;
+        end;
+      end;
   end;
 end;
 
@@ -722,6 +765,11 @@ begin
       begin
         // Process EEPROM page write timeouts.
         OnEEPROMPageWriteCompleted(false);
+      end;
+    CMDSetFuse:
+      begin
+        // Process fuse programming timeouts.
+        OnFuseConfigurationUpdated(false);
       end;
   end;
 end;
@@ -1083,6 +1131,103 @@ begin
   begin
     // Memory buffer is empty and stop file write operation.
     AddLogLine(STR_NO_EEPROM_DATA_ERROR);
+  end;
+end;
+
+procedure TfmMain.btnSetFuseConfigClick(Sender: TObject);
+
+  function ValidateFuseBitValue(txtField: TEdit) : Boolean;
+  var
+    tempConvVal : Integer;
+  begin
+    result := true;
+
+    if(Trim(txtField.Text) = '') then
+    begin
+      // Fuse bit values are not specified.
+      MessageDlg(Application.Title, STR_FUSE_VALUE_NOT_FOUND, TMsgDlgType.mtError, [TMsgDlgBtn.mbOK], '');
+      pgMain.ActivePageIndex := 3;
+      txtField.SelectAll;
+      txtField.Focused;
+      result := false;
+    end;
+
+    tempConvVal := StrToIntDef('$' + Trim(txtField.Text), 256);
+    if((tempConvVal < 0) or (tempConvVal > 255)) then
+    begin
+      // Fuse byte value is overflow!
+      MessageDlg(Application.Title, STR_FUSE_INVALID_VALUE, TMsgDlgType.mtError, [TMsgDlgBtn.mbOK], '');
+      pgMain.ActivePageIndex := 3;
+      txtField.Focused;
+      result := false;
+    end;
+  end;
+
+begin
+  isCancelOp := false;
+  fuseIndex := 0;
+
+  // Atleast one fuse setting must selected by the user to continue.
+  if((chkLow.Checked) or (chkLock.Checked) or (chkHigh.Checked) or (chkExt.Checked)) then
+  begin
+
+    // Validate and convert fuse low bit values.
+    if(chkLow.Checked) then
+    begin
+      if(ValidateFuseBitValue(txtFuseLow)) then
+      begin
+        fuseBitValue[0] := StrToInt('$' + Trim(txtFuseLow.Text));
+      end
+      else
+      begin
+        // Fuse low bit values are invalid or not specified!
+        exit;
+      end;
+    end;
+
+    // Validate and convert fuse high bit values.
+    if(chkHigh.Checked) then
+    begin
+      if(ValidateFuseBitValue(txtFuseHigh)) then
+      begin
+        fuseBitValue[1] := StrToInt('$' + Trim(txtFuseHigh.Text));
+      end
+      else
+      begin
+        // Fuse high bit values are invalid or not specified!
+        exit;
+      end;
+    end;
+
+    // Validate and convert extended fuse bit values.
+    if(chkExt.Checked) then
+    begin
+      if(ValidateFuseBitValue(txtFuseExt)) then
+      begin
+        fuseBitValue[2] := StrToInt('$' + Trim(txtFuseExt.Text));
+      end
+      else
+      begin
+        // Extended fuse values are invalid or not specified!
+        exit;
+      end;
+    end;
+
+    // Validate and convert lock fuse bit values.
+    if(chkLock.Checked) then
+    begin
+      if(ValidateFuseBitValue(txtFuseLock)) then
+      begin
+        fuseBitValue[3] := StrToInt('$' + Trim(txtFuseLock.Text));
+      end
+      else
+      begin
+        // Lock fuse values are invalid or not specified!
+        exit;
+      end;
+    end;
+
+    UpdateFuseByte();
   end;
 end;
 
@@ -1703,6 +1848,111 @@ begin
   tmrTimeout.Enabled := true;
 end;
 
+procedure TfmMain.MoveToNextFuseByte();
+  begin
+    inc(fuseIndex);
+    UpdateFuseByte();
+  end;
+
+procedure TfmMain.UpdateFuseByte();
+
+  procedure UpdateCurrentFuseByte(Cmd: Char; fuseVal: byte);
+  begin
+    responseStr := '';
+    responseLen := 0;
+    CurrentCommand := TDevCommand.CMDSetFuse;
+    serMain.WriteData(BuildCommand(Cmd, 0));
+    serMain.WriteData(Lowercase(IntToHex(fuseVal, 2)));
+    tmrTimeout.Interval := 1500;
+    tmrTimeout.Enabled := true;
+  end;
+
+begin
+  case fuseIndex of
+    0: // Update fuse low byte.
+      begin
+        if(chkLow.Checked) then
+        begin
+          AddLogLine(STR_SET_FUSE_LOW);
+          UpdateCurrentFuseByte(CMD_ID_SET_LOW_FUSE, fuseBitValue[0]);
+          responseLenReq := Length(SET_FUSE_LOW_RESPONSE);
+        end
+        else
+        begin
+          // Low fuse byte is not selected.
+          MoveToNextFuseByte();
+          exit;
+        end;
+      end;
+    1: // Update fuse high byte.
+      begin
+        if(chkHigh.Checked) then
+        begin
+          AddLogLine(STR_SET_FUSE_HIGH);
+          UpdateCurrentFuseByte(CMD_ID_SET_HIGH_FUSE, fuseBitValue[1]);
+          responseLenReq := Length(SET_FUSE_HIGH_RESPONSE);
+        end
+        else
+        begin
+          // High fuse byte is not selected.
+          MoveToNextFuseByte();
+          exit;
+        end;
+      end;
+    2: // Update extended fuse byte.
+      begin
+        if(chkExt.Checked) then
+        begin
+          AddLogLine(STR_SET_FUSE_EXT);
+          UpdateCurrentFuseByte(CMD_ID_SET_EXT_FUSE, fuseBitValue[2]);
+          responseLenReq := Length(SET_FUSE_EXT_RESPONSE);
+        end
+        else
+        begin
+          // Extended fuse byte is not selected.
+          MoveToNextFuseByte();
+          exit;
+        end;
+      end;
+    3: // Update lock fuse byte.
+      begin
+        if(chkLock.Checked) then
+        begin
+          AddLogLine(STR_SET_FUSE_LOCK);
+          UpdateCurrentFuseByte(CMD_ID_SET_LOCK_FUSE, fuseBitValue[3]);
+          responseLenReq := Length(SET_FUSE_LOCK_RESPONSE);
+        end
+        else
+        begin
+          // Lock fuse byte is not selected.
+          MoveToNextFuseByte();
+          exit;
+        end;
+      end;
+  end;
+
+  if (fuseIndex >= 4) then
+  begin
+    // End of fuse update loop.
+    AddLogLine(STR_FUSE_UPDATE_FINISH);
+    fuseIndex := 0;
+  end;
+end;
+
+procedure TfmMain.OnFuseConfigurationUpdated(IsSuccess: boolean);
+begin
+  if(IsSuccess) then
+  begin
+    // Current fuse bit update is successful.
+    MoveToNextFuseByte();
+  end
+  else
+  begin
+    // Fuse bit update is failed.
+    AddLogLine(STR_FUSE_UPDATE_FAIL);
+  end;
+end;
+
 procedure TfmMain.OnChipErase(IsSuccess: boolean);
 begin
   if(IsSuccess)then
@@ -2069,6 +2319,7 @@ begin
   btnSignature.Enabled := isCntEnabled;
   btnGetFuseConfig.Enabled := isCntEnabled;
   btnGetCalibration.Enabled := isCntEnabled;
+  btnSetFuseConfig.Enabled := isCntEnabled;
   btnEraseChip.Enabled := isCntEnabled;
   btnReadFlash.Enabled := isCntEnabled;
   txtSavePath.Enabled := isCntEnabled;
@@ -2092,6 +2343,10 @@ begin
   txtLoadEEPROM.Enabled := isCntEnabled;
   btnVerifyEEPROM.Enabled := isCntEnabled;
   btnVerifyFlash.Enabled := isCntEnabled;
+  chkExt.Enabled := isCntEnabled;
+  chkHigh.Enabled := isCntEnabled;
+  chkLock.Enabled := isCntEnabled;
+  chkLow.Enabled := isCntEnabled;
 
   // Update UI state of the configuration page.
   txtE2PROMPageSize.Enabled := isCntEnabled;

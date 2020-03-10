@@ -18,7 +18,7 @@
       <UseVersionInfo Value="True"/>
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="1"/>
-      <BuildNr Value="28"/>
+      <BuildNr Value="32"/>
       <StringTable Comments="https://github.com/dilshan/avr-hv2" CompanyName="Dilshan R Jayakody" FileDescription="AVR High Voltage Programmer" InternalName="avrhv2" LegalCopyright="Copyright (c) 2019 Dilshan R Jayakody" OriginalFilename="arduhvprog2" ProductName="AVR High Voltage Programmer" ProductVersion="0.0.0.0"/>
     </VersionInfo>
     <BuildModes Count="1">

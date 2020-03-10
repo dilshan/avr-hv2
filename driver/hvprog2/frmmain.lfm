@@ -1,13 +1,13 @@
 object fmMain: TfmMain
   Left = 496
-  Height = 771
+  Height = 802
   Top = 138
   Width = 1032
   BorderWidth = 5
   Caption = 'fmMain'
-  ClientHeight = 771
+  ClientHeight = 802
   ClientWidth = 1032
-  Constraints.MinHeight = 771
+  Constraints.MinHeight = 802
   Constraints.MinWidth = 1032
   DefaultMonitor = dmPrimary
   OnCreate = FormCreate
@@ -16,22 +16,22 @@ object fmMain: TfmMain
   LCLVersion = '1.8.2.0'
   object pgMain: TPageControl
     Left = 496
-    Height = 761
+    Height = 792
     Top = 5
     Width = 531
-    ActivePage = tabVersion
+    ActivePage = tabLog
     Align = alClient
-    TabIndex = 4
+    TabIndex = 0
     TabOrder = 0
     object tabLog: TTabSheet
       Caption = ' Log '
-      ClientHeight = 730
+      ClientHeight = 761
       ClientWidth = 527
       object txtLog: TMemo
         Left = 10
-        Height = 710
+        Height = 741
         Top = 10
-        Width = 557
+        Width = 507
         Align = alClient
         BorderSpacing.Around = 10
         ReadOnly = True
@@ -41,7 +41,7 @@ object fmMain: TfmMain
     end
     object tabFlash: TTabSheet
       Caption = ' Flash Memory '
-      ClientHeight = 730
+      ClientHeight = 761
       ClientWidth = 527
       object pnlFlash: TPanel
         Left = 10
@@ -71,7 +71,7 @@ object fmMain: TfmMain
     end
     object tabE2PROM: TTabSheet
       Caption = ' EEPROM '
-      ClientHeight = 730
+      ClientHeight = 761
       ClientWidth = 527
       object pnlE2PROM: TPanel
         Left = 10
@@ -102,7 +102,7 @@ object fmMain: TfmMain
     end
     object tabDevConfig: TTabSheet
       Caption = ' Configuration '
-      ClientHeight = 730
+      ClientHeight = 761
       ClientWidth = 527
       object lblSignature: TLabel
         Left = 11
@@ -303,7 +303,7 @@ object fmMain: TfmMain
     end
     object tabVersion: TTabSheet
       Caption = ' Version '
-      ClientHeight = 730
+      ClientHeight = 761
       ClientWidth = 527
       object pnlVersionInfoBasic: TPanel
         Left = 0
@@ -347,7 +347,7 @@ object fmMain: TfmMain
       object txtLicense: TMemo
         Cursor = crNo
         Left = 10
-        Height = 572
+        Height = 611
         Top = 82
         Width = 507
         Align = alClient
@@ -367,7 +367,7 @@ object fmMain: TfmMain
       object pnlProjectInfo: TPanel
         Left = 0
         Height = 66
-        Top = 664
+        Top = 703
         Width = 527
         Align = alBottom
         BevelOuter = bvNone
@@ -421,12 +421,12 @@ object fmMain: TfmMain
   end
   object pnlSideMain: TPanel
     Left = 5
-    Height = 761
+    Height = 792
     Top = 5
     Width = 491
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 761
+    ClientHeight = 792
     ClientWidth = 491
     TabOrder = 1
     object grpDevice: TGroupBox
@@ -477,27 +477,27 @@ object fmMain: TfmMain
     end
     object grpActions: TGroupBox
       Left = 5
-      Height = 620
+      Height = 650
       Top = 112
       Width = 482
       Caption = ' Actions '
-      ClientHeight = 601
+      ClientHeight = 631
       ClientWidth = 478
       TabOrder = 1
       object btnVersion: TButton
         Left = 8
         Height = 25
         Top = 16
-        Width = 224
+        Width = 230
         Caption = 'Programmer &Version'
         OnClick = btnVersionClick
         TabOrder = 0
       end
       object btnSignature: TButton
-        Left = 248
+        Left = 242
         Height = 25
         Top = 16
-        Width = 224
+        Width = 230
         Caption = 'Chip &Signature'
         OnClick = btnSignatureClick
         TabOrder = 1
@@ -506,16 +506,16 @@ object fmMain: TfmMain
         Left = 8
         Height = 25
         Top = 48
-        Width = 224
+        Width = 230
         Caption = 'Read &Fuse Bytes'
         OnClick = btnGetFuseConfigClick
         TabOrder = 2
       end
       object btnGetCalibration: TButton
-        Left = 248
+        Left = 242
         Height = 25
         Top = 48
-        Width = 224
+        Width = 230
         Caption = 'Read &Calibration Byte'
         OnClick = btnGetCalibrationClick
         TabOrder = 3
@@ -523,8 +523,8 @@ object fmMain: TfmMain
       object btnEraseChip: TButton
         Left = 8
         Height = 25
-        Top = 80
-        Width = 224
+        Top = 112
+        Width = 230
         Caption = '&Erase Chip'
         OnClick = btnEraseChipClick
         TabOrder = 4
@@ -532,7 +532,7 @@ object fmMain: TfmMain
       object grpFlash: TGroupBox
         Left = 7
         Height = 232
-        Top = 120
+        Top = 152
         Width = 464
         Caption = ' Flash Memory '
         ClientHeight = 213
@@ -637,7 +637,7 @@ object fmMain: TfmMain
       object grpEEPROM: TGroupBox
         Left = 7
         Height = 232
-        Top = 360
+        Top = 392
         Width = 464
         Caption = ' EEPROM '
         ClientHeight = 213
@@ -740,19 +740,60 @@ object fmMain: TfmMain
         end
       end
       object btnCancel: TButton
-        Left = 248
+        Left = 242
         Height = 25
-        Top = 80
-        Width = 224
+        Top = 112
+        Width = 230
         Caption = 'Cance&l'
         OnClick = btnCancelClick
         TabOrder = 5
+      end
+      object btnSetFuseConfig: TButton
+        Left = 8
+        Height = 25
+        Top = 80
+        Width = 230
+        Caption = 'Write F&use Bytes'
+        OnClick = btnSetFuseConfigClick
+        TabOrder = 8
+      end
+      object chkLow: TCheckBox
+        Left = 242
+        Height = 24
+        Top = 81
+        Width = 54
+        Caption = 'Low'
+        TabOrder = 9
+      end
+      object chkHigh: TCheckBox
+        Left = 302
+        Height = 24
+        Top = 81
+        Width = 56
+        Caption = 'High'
+        TabOrder = 10
+      end
+      object chkExt: TCheckBox
+        Left = 362
+        Height = 24
+        Top = 81
+        Width = 48
+        Caption = 'Ext'
+        TabOrder = 11
+      end
+      object chkLock: TCheckBox
+        Left = 414
+        Height = 24
+        Top = 81
+        Width = 58
+        Caption = 'Lock'
+        TabOrder = 12
       end
     end
     object pnlStatus: TPanel
       Left = 0
       Height = 28
-      Top = 733
+      Top = 764
       Width = 491
       Align = alBottom
       BevelOuter = bvNone

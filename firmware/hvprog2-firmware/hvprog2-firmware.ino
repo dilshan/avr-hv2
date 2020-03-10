@@ -39,6 +39,10 @@
 #define CMD_READ_EEPROM     'T'
 #define CMD_WRITE_EEPROM    'J'
 #define CMD_WRITE_E2PAGE    'X'
+#define CMD_SET_FUSE_LOW    'B'
+#define CMD_SET_FUSE_HIGH   'I'
+#define CMD_SET_FUSE_EXT    'K'
+#define CMD_SET_FUSE_LOCK   'O'
 
 #define PIN_VCC             22
 #define PIN_12V             23
@@ -440,6 +444,168 @@ void readFuseBytes(unsigned char* fuseConfig)
   resetProgramMode();
 }
 
+unsigned char setLockFuse(unsigned char fuseVal)
+{
+  unsigned char fuseSetTimeout = 0;
+  
+  // Enter device into programming mode.
+  initProgramMode();
+
+  // Load Command 0010 0000.
+  loadCommand(0x20);
+
+  // Load Data Low Byte.
+  loadDataLow(fuseVal);
+
+  // Give WR a negative pulse.
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, LOW);
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, HIGH);
+
+  // Wait until RDY/BSY goes high.
+  while(fuseSetTimeout < 250)
+  {
+    delay(20);
+    fuseSetTimeout++;
+
+    if(digitalRead(PIN_RDY) == HIGH)
+    {
+      fuseSetTimeout = 0;
+      break;      
+    }
+  }
+
+  resetProgramMode();
+  return (fuseSetTimeout == 0) ? 0x30 : 0x31;
+}
+
+unsigned char setFuseLow(unsigned char fuseVal)
+{
+  unsigned char fuseSetTimeout = 0;
+  
+  // Enter device into programming mode.
+  initProgramMode();
+
+  // Load Command 0100 0000.
+  loadCommand(0x40);
+
+  // Load Data Low Byte.
+  loadDataLow(fuseVal);
+
+  // Set BS1 to 0 and BS2 to 0.
+  digitalWrite(PIN_BS1, LOW);
+  digitalWrite(PIN_BS2, LOW);
+
+  // Give WR a negative pulse.
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, LOW);
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, HIGH);
+
+  // Wait until RDY/BSY goes high.
+  while(fuseSetTimeout < 250)
+  {
+    delay(20);
+    fuseSetTimeout++;
+
+    if(digitalRead(PIN_RDY) == HIGH)
+    {
+      fuseSetTimeout = 0;
+      break;      
+    }
+  }
+
+  resetProgramMode();
+  return (fuseSetTimeout == 0) ? 0x30 : 0x31;
+}
+
+unsigned char setFuseHigh(unsigned char fuseVal)
+{
+  unsigned char fuseSetTimeout = 0;
+  
+  // Enter device into programming mode.
+  initProgramMode();
+
+  // Load Command 0100 0000.
+  loadCommand(0x40);
+
+  // Load Data Low Byte.
+  loadDataLow(fuseVal);
+
+  // Set BS1 to 1 and BS2 to 0.
+  digitalWrite(PIN_BS1, HIGH);
+  digitalWrite(PIN_BS2, LOW);
+
+  // Give WR a negative pulse.
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, LOW);
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, HIGH);
+
+  // Wait until RDY/BSY goes high.
+  while(fuseSetTimeout < 250)
+  {
+    delay(20);
+    fuseSetTimeout++;
+
+    if(digitalRead(PIN_RDY) == HIGH)
+    {
+      fuseSetTimeout = 0;
+      break;      
+    }
+  }
+  
+  resetProgramMode();
+
+  // Set BS1 to 0.
+  digitalWrite(PIN_BS1, LOW);
+  return (fuseSetTimeout == 0) ? 0x30 : 0x31;
+}
+
+unsigned char setFuseExtended(unsigned char fuseVal)
+{
+  unsigned char fuseSetTimeout = 0;
+  
+  // Enter device into programming mode.
+  initProgramMode();
+
+  // Load Command 0100 0000.
+  loadCommand(0x40);
+
+  // Load Data Low Byte.
+  loadDataLow(fuseVal);
+
+  //  Set BS1 to 0 and BS2 to 1.
+  digitalWrite(PIN_BS1, LOW);
+  digitalWrite(PIN_BS2, HIGH);
+
+  // Give WR a negative pulse.
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, LOW);
+  delayMicroseconds(5);
+  digitalWrite(PIN_WR, HIGH);
+
+  // Wait until RDY/BSY goes high.
+  while(fuseSetTimeout < 250)
+  {
+    delay(20);
+    fuseSetTimeout++;
+
+    if(digitalRead(PIN_RDY) == HIGH)
+    {
+      fuseSetTimeout = 0;
+      break;      
+    }
+  }
+
+  resetProgramMode();
+
+  // Set BS1 to 0.
+  digitalWrite(PIN_BS2, LOW);
+  return (fuseSetTimeout == 0) ? 0x30 : 0x31; 
+}
+
 unsigned char readCalibrationByte()
 {
   unsigned char tempData;
@@ -738,10 +904,13 @@ void loop()
       unsigned char inwriteData[3];
 
       unsigned char inWriteHighAddr[2];
-      unsigned char inAddrByte[0];
+      unsigned char inAddrByte[1];
+
+      unsigned char inFuseAddr[2];
+      unsigned char inFuseByte[1];
 
       unsigned char writeStatus;
-      
+      unsigned char fuseStatus;
       unsigned char eraseStatus;
 
       // Execute specified action based on the received command.
@@ -912,9 +1081,83 @@ void loop()
           Serial.write(writeStatus);
           lastCommand = CMD_WRITE_E2PAGE;
           break;
+        case CMD_SET_FUSE_LOW:
+          // Set fuse low byte.
+          if(readCmdParam(2, inFuseAddr) == 0)
+          {
+            chrToByte(inFuseAddr, inFuseByte); 
+            fuseStatus = setFuseLow(inFuseByte[0]);
+
+            // Send update status at the end of the header.
+            sendCommandResponse(CMD_SET_FUSE_LOW, '0', '1');
+            Serial.write(fuseStatus);
+          }
+          else
+          {
+            // Send fail response of the set fuse low byte command.
+            sendCommandResponse(CMD_SET_FUSE_LOW, '0', '0');   
+          }
+          
+          lastCommand = CMD_SET_FUSE_LOW;
+          break;
+        case CMD_SET_FUSE_HIGH:
+          // Set fuse high byte.
+          if(readCmdParam(2, inFuseAddr) == 0)
+          {
+            chrToByte(inFuseAddr, inFuseByte); 
+            fuseStatus = setFuseHigh(inFuseByte[0]);
+
+            // Send update status at the end of the header.
+            sendCommandResponse(CMD_SET_FUSE_HIGH, '0', '1');
+            Serial.write(fuseStatus);
+          }
+          else
+          {
+            // Send fail response of the set fuse high byte command.
+            sendCommandResponse(CMD_SET_FUSE_HIGH, '0', '0');   
+          }
+          
+          lastCommand = CMD_SET_FUSE_HIGH;
+          break;
+        case CMD_SET_FUSE_EXT:
+          // Set extended fuse byte.
+          if(readCmdParam(2, inFuseAddr) == 0)
+          {
+            chrToByte(inFuseAddr, inFuseByte); 
+            fuseStatus = setFuseExtended(inFuseByte[0]);
+
+            // Send update status at the end of the header.
+            sendCommandResponse(CMD_SET_FUSE_EXT, '0', '1');
+            Serial.write(fuseStatus);
+          }
+          else
+          {
+            // Send fail response of the set extended fuse byte command.
+            sendCommandResponse(CMD_SET_FUSE_EXT, '0', '0');   
+          }
+          
+          lastCommand = CMD_SET_FUSE_EXT;
+          break;
+        case CMD_SET_FUSE_LOCK:
+          // Set the lock bits.
+          if(readCmdParam(2, inFuseAddr) == 0)
+          {
+            chrToByte(inFuseAddr, inFuseByte); 
+            fuseStatus = setLockFuse(inFuseByte[0]);
+
+            // Send update status at the end of the header.
+            sendCommandResponse(CMD_SET_FUSE_LOCK, '0', '1');
+            Serial.write(fuseStatus);
+          }
+          else
+          {
+            // Send fail response of the set lock fuse byte command.
+            sendCommandResponse(CMD_SET_FUSE_LOCK, '0', '0');   
+          }
+          
+          lastCommand = CMD_SET_FUSE_LOCK;
+          break;
       }
     }
-    
   }
-
 }

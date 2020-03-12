@@ -11,7 +11,7 @@ The control software of this programmer is design to work on both *Windows* and 
 
 The current firmware and control software of this programmer supports most of the generally available *AVR* MCUs which including *ATmega8*, *ATmega328*, *ATmega32*, *ATmega16*, etc. The *AVR* MCUs with extended addressing modes are currently not supported. 
 
-The PCB board used in this project is sponsored by the *[PCBWay](https://www.pcbway.com/)*. PCB of this project can directly order from *PCBWay* through this link.
+The PCB board used in this project is sponsored by the *[PCBWay](https://www.pcbway.com/)*. PCB of this project can directly order from *PCBWay* through this [link](https://www.pcbway.com/project/shareproject/AVR_High_Voltage_Programmer_2.html).
 
 This is an open-source hardware project. All the design files, firmware, [documentation](https://github.com/dilshan/avr-hv2/wiki) and control software source codes are available at this repository.
 

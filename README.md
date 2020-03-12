@@ -15,3 +15,8 @@ The PCB board used in this project is sponsored by the *[PCBWay](https://www.pcb
 
 This is an open-source hardware project. All the design files, firmware, [documentation](https://github.com/dilshan/avr-hv2/wiki) and control software source codes are available at this repository.
 
+This is an open-source hardware project. All the design files, documentation, firmware source code are available to [download](https://github.com/dilshan/avr-hv2/releases) at the project source repository. All the content of this project are distributed under the terms of the following license:
+
+- Hardware License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Software License: [MIT](https://github.com/dilshan/avr-hv2/blob/master/LICENSE)
+- Documentation License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)

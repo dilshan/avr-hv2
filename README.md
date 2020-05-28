@@ -13,8 +13,10 @@ The current firmware and control software of this programmer supports most of th
 
 The PCB board used in this project is sponsored by the *[PCBWay](https://www.pcbway.com/)*. PCB of this project can directly order from *PCBWay* through this [link](https://www.pcbway.com/project/shareproject/AVR_High_Voltage_Programmer_2.html).
 
-This is an open-source hardware project. All the design files, [documentation](https://github.com/dilshan/avr-hv2/wiki) and firmware source code are available to [download](https://github.com/dilshan/avr-hv2/releases) at the project source repository. All the content of this project are distributed under the terms of the following license:
+This is a certified open-source hardware project. All the design files, [documentation](https://github.com/dilshan/avr-hv2/wiki) and firmware source code are available to [download](https://github.com/dilshan/avr-hv2/releases) at the project source repository. All the content of this project are distributed under the terms of the following license:
 
 - Hardware License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - Software License: [MIT](https://github.com/dilshan/avr-hv2/blob/master/LICENSE)
 - Documentation License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+[![OSHW-LK000007](https://raw.githubusercontent.com/dilshan/avr-hv2/master/resources/OSHW_LK000007.jpg)](https://certification.oshwa.org/lk000007.html)
